@@ -28,13 +28,32 @@ export default class MySqlDB implements IDatabase {
   };
 
   async queryRandomProduct() {
-    ///TODO: Implement this
-    return this.connection.query('') as unknown as Product;
+    // Define the SQL query explicitly as a variable for debugging
+    const sql = 'SELECT * FROM products ORDER BY RAND() LIMIT 1;';
+    console.log('Executing random product query:', sql);
+    
+    try {
+      const [rows] = await this.connection.query(sql);
+      console.log('Query result rows:', Array.isArray(rows) ? rows.length : 0);
+      
+      // If no products, return null instead of undefined
+      if (!rows || (Array.isArray(rows) && rows.length === 0)) {
+        console.log('No products found in database');
+        return null;
+      }
+      
+      return rows[0] as Product;
+    } catch (error) {
+      console.error('Error executing random product query:', error);
+      throw error;
+    }
   };
 
   queryAllProducts = async (category?: string) => {
-    ///TODO: Implement this
-    return this.connection.query('') as unknown as Product[];
+    if (category) {
+      return (await this.connection.query('SELECT * FROM products WHERE categoryId = ?', [category]))[0] as Product[];
+    }
+    return (await this.connection.query('SELECT * FROM products;'))[0] as Product[];
   };
 
   queryAllCategories = async () => {
@@ -42,15 +61,13 @@ export default class MySqlDB implements IDatabase {
   };
 
   queryAllOrders = async () => {
-    ///TODO: Implement this
-    return (await this.connection.query(""))[0] as Order[];
+    return (await this.connection.query("SELECT * FROM orders;"))[0] as Order[];
   };
 
   async queryOrdersByUser(id: string) {
-    ///TODO: Implement this
     return (
-      await this.connection.query('')
-    )[0] as Order[]; // Not a perfect analog for NoSQL, since SQL cannot return a list.
+      await this.connection.query('SELECT * FROM orders WHERE userId = ?', [id])
+    )[0] as Order[];
   };
 
   queryOrderById = async (id: string) => {
@@ -74,11 +91,45 @@ export default class MySqlDB implements IDatabase {
   };
 
   insertOrder = async (order: Order) => {
-    ///TODO: Implement this
+    // Insert the order record
+    await this.connection.query(
+      'INSERT INTO orders (id, userId, totalAmount) VALUES (?, ?, ?)',
+      [order.id, order.userId, order.totalAmount]
+    );
+    
+    // Insert each product in the order
+    for (const product of order.products) {
+      await this.connection.query(
+        'INSERT INTO order_items (orderId, productId, quantity) VALUES (?, ?, ?)',
+        [order.id, product.productId, product.quantity]
+      );
+    }
   };
 
   updateUser = async (patch: UserPatchRequest) => {
-    ///TODO: Implement this
+    const updates = [];
+    const values = [];
+    
+    if (patch.email) {
+      updates.push('email = ?');
+      values.push(patch.email);
+    }
+    
+    if (patch.password) {
+      updates.push('password = ?');
+      values.push(patch.password);
+    }
+    
+    if (updates.length === 0) {
+      return; // Nothing to update
+    }
+    
+    values.push(patch.id); // Add ID for the WHERE clause
+    
+    await this.connection.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
   };
 
   // This is to delete the inserted order to avoid database data being contaminated also to make the data in database consistent with that in the json files so the comparison will return true.
