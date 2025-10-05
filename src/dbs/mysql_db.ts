@@ -91,18 +91,52 @@ export default class MySqlDB implements IDatabase {
   };
 
   insertOrder = async (order: Order) => {
-    // Insert the order record
-    await this.connection.query(
-      'INSERT INTO orders (id, userId, totalAmount) VALUES (?, ?, ?)',
-      [order.id, order.userId, order.totalAmount]
-    );
-    
-    // Insert each product in the order
-    for (const product of order.products) {
+    try {
+      // Start a transaction to ensure data consistency
+      await this.connection.beginTransaction();
+      
+      // Insert the order record
+      console.log(`Inserting order: ${order.id}`);
       await this.connection.query(
-        'INSERT INTO order_items (orderId, productId, quantity) VALUES (?, ?, ?)',
-        [order.id, product.productId, product.quantity]
+        'INSERT INTO orders (id, userId, totalAmount) VALUES (?, ?, ?)',
+        [order.id, order.userId, order.totalAmount]
       );
+      
+      // Insert each product in the order with handling for potential duplicates
+      for (const product of order.products) {
+        console.log(`Inserting order item: orderId=${order.id}, productId=${product.productId}`);
+        
+        // Check if the order item already exists
+        const [existingItems] = await this.connection.query(
+          'SELECT 1 FROM order_items WHERE orderId = ? AND productId = ?',
+          [order.id, product.productId]
+        );
+        
+        if (Array.isArray(existingItems) && existingItems.length > 0) {
+          console.log(`Order item already exists, updating: ${order.id}/${product.productId}`);
+          // Update the existing item instead of inserting
+          await this.connection.query(
+            'UPDATE order_items SET quantity = ? WHERE orderId = ? AND productId = ?',
+            [product.quantity, order.id, product.productId]
+          );
+        } else {
+          // Insert new order item
+          await this.connection.query(
+            'INSERT INTO order_items (orderId, productId, quantity) VALUES (?, ?, ?)',
+            [order.id, product.productId, product.quantity]
+          );
+        }
+      }
+      
+      // Commit the transaction
+      await this.connection.commit();
+      console.log(`Order ${order.id} inserted successfully`);
+      
+    } catch (error) {
+      // Rollback on error
+      await this.connection.rollback();
+      console.error('Error inserting order:', error);
+      throw error;
     }
   };
 
