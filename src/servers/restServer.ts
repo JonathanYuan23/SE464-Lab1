@@ -10,7 +10,6 @@ export default class RestServer implements IServer {
 
   db: IDatabase;
   server: any;
-  requestCount: number = 0;
 
   constructor(db: IDatabase) {
     this.db = db;
@@ -23,15 +22,9 @@ export default class RestServer implements IServer {
     this.server.use(morgan("tiny"));
     this.server.use(bodyParser.json());
 
-    this.server.get("/", (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
-      res.send("Hello, World");
-    });
+    this.server.get("/", (req: express.Request, res: express.Response) => res.send("Hello, World!"));
 
     this.server.get("/product/:productId", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /product/:productId, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const { productId } = (req.params as ProductRequest);
       if (!productId) {
         res.status(400).send("No product id provided");
@@ -42,37 +35,27 @@ export default class RestServer implements IServer {
     }); // Gets a product by product id
 
     this.server.get("/randomproduct", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /randomproduct, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const randProd = await this.db.queryRandomProduct();
       res.send(randProd);
     }); // I'm feeling lucky type
 
     this.server.get("/products", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /products, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const { categoryId } = (req.query as AllProductsRequest);
       const products = await this.db.queryAllProducts(categoryId);
       res.send(products);
     }); // Gets all products, or by category
 
     this.server.get("/categories", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /categories, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const categories = await this.db.queryAllCategories();
       res.send(categories);
     }); // Gets all categories
 
     this.server.get("/allorders", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /allorders, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const orders = await this.db.queryAllOrders();
       res.send(orders);
     }); // Gets all orders
 
     this.server.get("/orders", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /orders, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const { id } = (req.query as UserRequest);
       if (!id) {
         res.status(400).send("No user id provided");
@@ -83,8 +66,6 @@ export default class RestServer implements IServer {
     }); // Gets all of a single user's orders
 
     this.server.get("/order/:id", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /order/:id, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const { id } = (req.params as OrderRequest);
       if (!id) {
         res.status(400).send("No order id provided");
@@ -95,8 +76,6 @@ export default class RestServer implements IServer {
     }); // Gets more details on a specific order by id
 
     this.server.get("/user/:id", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /user/:id, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const { id } = (req.params as UserRequest);
       if (!id) {
         res.status(400).send("No user id provided");
@@ -106,24 +85,18 @@ export default class RestServer implements IServer {
       res.send(user);
     }); // Gets details on a specific user by username
 
-    this.server.get("/users", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: GET, Path: /users, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
+    this.server.get("/users", async (_req: express.Request, res: express.Response) => {
       const users = await this.db.queryAllUsers();
       res.send(users);
     });// Gets all users
 
     this.server.post("/orders", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: POST, Path: /orders, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Body: ${JSON.stringify(req.body)}, Total requests: ${this.requestCount}`);
       const order = (req.body as Order);
       const response = await this.db.insertOrder(order);
       res.send(response);
     }); // Creates a new order
 
     this.server.patch("/user/:id", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: PATCH, Path: /user/:id, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Body: ${JSON.stringify(req.body)}, Total requests: ${this.requestCount}`);
       const updates = req.body;
       const userId = (req.params as UserRequest).id;
       const patch: UserPatchRequest = {
@@ -135,8 +108,6 @@ export default class RestServer implements IServer {
     }); // Updates a user's email or password
 
     this.server.delete("/order/:id", async (req: express.Request, res: express.Response) => {
-      this.requestCount++;
-      logger.info(`Incoming request - Method: DELETE, Path: /order/:id, Query: ${JSON.stringify(req.query)}, Params: ${JSON.stringify(req.params)}, Total requests: ${this.requestCount}`);
       const { id } = req.params as OrderRequest;
       if (!id) {
         res.status(400).send("No order id provided");
