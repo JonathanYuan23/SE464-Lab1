@@ -2,6 +2,7 @@ import { Product } from "../compiled_proto/app";
 import { IDatabase } from "../interfaces";
 import { Category, Order, User, UserPatchRequest } from "../types";
 import mysql from "mysql2/promise";
+import logger from "../logger";
 
 export default class MySqlDB implements IDatabase {
   connection: mysql.Connection;
@@ -14,7 +15,7 @@ export default class MySqlDB implements IDatabase {
       port: parseInt(process.env.RDS_PORT), // Convert port to a number
       database: process.env.RDS_DATABASE,
     });
-    console.log("MySQL connected!");
+    logger.info("MySQL connected!");
   }
 
   constructor() {
@@ -30,21 +31,21 @@ export default class MySqlDB implements IDatabase {
   async queryRandomProduct() {
     // Define the SQL query explicitly as a variable for debugging
     const sql = 'SELECT * FROM products ORDER BY RAND() LIMIT 1;';
-    console.log('Executing random product query:', sql);
+    logger.info('Executing random product query:', sql);
     
     try {
       const [rows] = await this.connection.query(sql);
-      console.log('Query result rows:', Array.isArray(rows) ? rows.length : 0);
+      logger.info('Query result rows:', Array.isArray(rows) ? rows.length : 0);
       
       // If no products, return null instead of undefined
       if (!rows || (Array.isArray(rows) && rows.length === 0)) {
-        console.log('No products found in database');
+        logger.info('No products found in database');
         return null;
       }
       
       return rows[0] as Product;
     } catch (error) {
-      console.error('Error executing random product query:', error);
+      logger.error('Error executing random product query:', error);
       throw error;
     }
   };
