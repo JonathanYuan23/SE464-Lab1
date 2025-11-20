@@ -19,16 +19,25 @@ export default class MySqlDB implements IDatabase {
   }
 
   constructor() {
-    this.init();
+    // Connection will be initialized via init() method
+  }
+
+  private ensureConnection() {
+    if (!this.connection) {
+      logger.error("MySQL connection used before init()");
+      throw new Error("MySQL connection not initialized");
+    }
   }
 
   async queryProductById(productId) {
+    this.ensureConnection();
     return (await this.connection.query(`SELECT *
                                 FROM products
                                 WHERE id = "${productId}";`))[0][0] as Product;
   };
 
   async queryRandomProduct() {
+    this.ensureConnection();
     // Define the SQL query explicitly as a variable for debugging
     const sql = 'SELECT * FROM products ORDER BY RAND() LIMIT 1;';
     logger.info('Executing random product query:', sql);
@@ -51,6 +60,7 @@ export default class MySqlDB implements IDatabase {
   };
 
   queryAllProducts = async (category?: string) => {
+    this.ensureConnection();
     if (category) {
       return (await this.connection.query('SELECT * FROM products WHERE categoryId = ?', [category]))[0] as Product[];
     }
@@ -58,20 +68,24 @@ export default class MySqlDB implements IDatabase {
   };
 
   queryAllCategories = async () => {
+    this.ensureConnection();
     return (await this.connection.query("SELECT * FROM categories;"))[0] as Category[];
   };
 
   queryAllOrders = async () => {
+    this.ensureConnection();
     return (await this.connection.query("SELECT * FROM orders;"))[0] as Order[];
   };
 
   async queryOrdersByUser(id: string) {
+    this.ensureConnection();
     return (
       await this.connection.query('SELECT * FROM orders WHERE userId = ?', [id])
     )[0] as Order[];
   };
 
   queryOrderById = async (id: string) => {
+    this.ensureConnection();
     return (
       await this.connection.query(`SELECT *
                              FROM orders
@@ -80,6 +94,7 @@ export default class MySqlDB implements IDatabase {
   };
 
   queryUserById = async (id: string) => {
+    this.ensureConnection();
     return (
       await this.connection.query(`SELECT id, email, name
                              FROM users
@@ -88,10 +103,12 @@ export default class MySqlDB implements IDatabase {
   };
 
   queryAllUsers = async () => {
+    this.ensureConnection();
     return (await this.connection.query("SELECT id, name, email FROM users"))[0] as User[];
   };
 
   insertOrder = async (order: Order) => {
+    this.ensureConnection();
     // Insert the order record
     await this.connection.query(
       'INSERT INTO orders (id, userId, totalAmount) VALUES (?, ?, ?)',
@@ -100,6 +117,7 @@ export default class MySqlDB implements IDatabase {
   };
 
   updateUser = async (patch: UserPatchRequest) => {
+    this.ensureConnection();
     const updates = [];
     const values = [];
     
@@ -128,6 +146,7 @@ export default class MySqlDB implements IDatabase {
   // This is to delete the inserted order to avoid database data being contaminated also to make the data in database consistent with that in the json files so the comparison will return true.
   // Feel free to modify this based on your inserOrder implementation
   deleteOrder = async (id: string) => {
+    this.ensureConnection();
     await this.connection.query(
       `DELETE FROM order_items WHERE orderId = ?`,
       [id]
