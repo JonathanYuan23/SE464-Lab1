@@ -44,8 +44,13 @@ export default class RestServer implements IServer {
     this.server.get("/randomproduct", async (req: express.Request, res: express.Response) => {
       this.requestCount++;
       logger.info(`[Request #${this.requestCount}] Incoming GET /randomproduct - params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(req.query)}`);
-      const randProd = await this.db.queryRandomProduct();
-      res.send(randProd);
+      try {
+        const randProd = await this.db.queryRandomProduct();
+        res.send(randProd);
+      } catch (error) {
+        logger.error(`Error fetching random product:`, error);
+        res.status(500).send({ error: 'Failed to fetch random product' });
+      }
     }); // I'm feeling lucky type
 
     this.server.get("/products", async (req: express.Request, res: express.Response) => {
