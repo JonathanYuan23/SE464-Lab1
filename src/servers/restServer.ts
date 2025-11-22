@@ -24,7 +24,7 @@ export default class RestServer implements IServer {
     this.server.use(bodyParser.json());
 
     this.server.get("/", (req: express.Request, res: express.Response) => {
-      this.requestCount++;
+      // don't increment request count for health check
       logger.info(`[Request #${this.requestCount}] Incoming GET / - params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(req.query)}`);
       res.send("Hello, World!");
     });
