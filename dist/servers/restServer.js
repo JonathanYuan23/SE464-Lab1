@@ -29,8 +29,8 @@ class RestServer {
         this.server.use((0, morgan_1.default)("tiny"));
         this.server.use(body_parser_1.default.json());
         this.server.get("/", (req, res) => {
-            this.requestCount++;
-            logger_1.default.info(`[Request #${this.requestCount}] Incoming GET / - params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(req.query)}`);
+            // don't increment request count for health check
+            logger_1.default.info(`[Request (Health Check)] Incoming GET / - params: ${JSON.stringify(req.params)}, query: ${JSON.stringify(req.query)}`);
             res.send("Hello, World!");
         });
         this.server.get("/product/:productId", (req, res) => __awaiter(this, void 0, void 0, function* () {
